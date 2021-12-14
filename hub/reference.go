@@ -1,4 +1,4 @@
-package dispatcher
+package main
 
 import (
 	"context"
@@ -11,12 +11,12 @@ type referencesDB struct {
 }
 
 type msg struct {
-	key   int
+	key   string
 	value *hub
 }
 
 type requestElement struct {
-	key    int
+	key    string
 	replyC chan *hub
 }
 
@@ -24,7 +24,7 @@ func newReferencesDB(ctx context.Context) *referencesDB {
 	inputC := make(chan msg)
 	requestElementC := make(chan requestElement)
 	go func() {
-		references := make(map[int]*hub)
+		references := make(map[string]*hub)
 		for {
 			select {
 			case <-ctx.Done():
@@ -32,7 +32,7 @@ func newReferencesDB(ctx context.Context) *referencesDB {
 			case ref := <-inputC:
 				references[ref.key] = ref.value
 			case req := <-requestElementC:
-				// if we dont expect a reply, we want to delete the key
+				// if we don't expect a reply, we want to delete the key
 				if req.replyC == nil {
 					delete(references, req.key)
 					continue
@@ -48,11 +48,11 @@ func newReferencesDB(ctx context.Context) *referencesDB {
 	}
 }
 
-func (r *referencesDB) addHub(key int, d *hub) {
+func (r *referencesDB) addHub(key string, d *hub) {
 	r.inputC <- msg{key, d}
 }
 
-func (r *referencesDB) getHub(key int) *hub {
+func (r *referencesDB) getHub(key string) *hub {
 	replyC := make(chan *hub)
 	r.requestElementC <- requestElement{
 		key:    key,
@@ -62,7 +62,7 @@ func (r *referencesDB) getHub(key int) *hub {
 	return d
 }
 
-func (r *referencesDB) removeHub(key int) {
+func (r *referencesDB) removeHub(key string) {
 	r.requestElementC <- requestElement{
 		key:    key,
 		replyC: nil,
