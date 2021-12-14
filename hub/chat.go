@@ -127,7 +127,7 @@ func (cs *hub) publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cs.publish(msg)
+	cs.publish(r.Context(), msg)
 
 	w.WriteHeader(http.StatusAccepted)
 }
@@ -171,11 +171,11 @@ func (cs *hub) subscribe(ctx context.Context, c *websocket.Conn) error {
 // publish the msg to all subscribers.
 // It never blocks and so messages to slow subscribers
 // are dropped.
-func (cs *hub) publish(msg []byte) {
+func (cs *hub) publish(ctx context.Context, msg []byte) {
 	cs.subscribersMu.Lock()
 	defer cs.subscribersMu.Unlock()
 
-	err := cs.publishLimiter.Wait(context.Background())
+	err := cs.publishLimiter.Wait(ctx)
 	if err != nil {
 		log.Println(err)
 	}
