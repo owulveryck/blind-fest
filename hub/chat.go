@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -97,7 +98,19 @@ func (cs *hub) subscribeHandler(w http.ResponseWriter, r *http.Request) {
 		cs.logf("%v", err)
 		return
 	}
-	defer c.Close(websocket.StatusInternalError, "")
+	defer func() {
+		c.Close(websocket.StatusInternalError, "")
+		b, _ := json.Marshal(&Info{
+			c:       c,
+			message: "left",
+		})
+		cs.publish(r.Context(), b)
+	}()
+	b, _ := json.Marshal(&Info{
+		c:       c,
+		message: "joined",
+	})
+	cs.publish(r.Context(), b)
 
 	err = cs.subscribe(r.Context(), c)
 	if errors.Is(err, context.Canceled) {
