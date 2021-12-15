@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"errors"
+	"flag"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
@@ -23,11 +25,18 @@ func main() {
 // run initializes the chatServer and then
 // starts a http.Server for the passed in address.
 func run() error {
-	if len(os.Args) < 2 {
-		return errors.New("please provide an address to listen on as the first argument")
+	h := flag.Bool("h", false, "print usage")
+	flag.Parse()
+	if *h {
+		envconfig.Usage("", &config)
+		os.Exit(0)
 	}
-
-	l, err := net.Listen("tcp", os.Args[1])
+	err := envconfig.Process("", &config)
+	if err != nil {
+		envconfig.Usage("", &config)
+		log.Fatal(err.Error())
+	}
+	l, err := net.Listen("tcp", config.Host)
 	if err != nil {
 		return err
 	}

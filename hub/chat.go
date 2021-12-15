@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -50,6 +51,10 @@ type subscriber struct {
 	closeSlow   func()
 }
 
+func (s *subscriber) MarshalJSON() ([]byte, error) {
+	return json.Marshal(fmt.Sprintf("%p", s))
+}
+
 var validPath = regexp.MustCompile(`^/([0-9]+)`)
 
 type gameServer struct {
@@ -93,7 +98,9 @@ func (cs *hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // subscribeHandler accepts the WebSocket connection and then subscribes
 // it to all future messages.
 func (cs *hub) subscribeHandler(w http.ResponseWriter, r *http.Request) {
-	c, err := websocket.Accept(w, r, nil)
+	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		OriginPatterns: config.OriginPatterns,
+	})
 	if err != nil {
 		cs.logf("%v", err)
 		return
